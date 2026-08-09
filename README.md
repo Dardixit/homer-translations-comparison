@@ -5,9 +5,7 @@ English translation, and V. A. Zhukovsky's Russian translation, aligned line by 
 in three synchronized columns. Styled after Attic red-figure stamnos vases
 (the "Siren Vase", British Museum E440).
 
-**Live version:** enable GitHub Pages for this repository (Settings → Pages →
-deploy from branch, root folder) and it will be served at
-`https://<username>.github.io/<repo>/`.
+**Live version:** https://dardixit.github.io/odyssey-translation-comparison/
 
 ## Features
 
