@@ -290,8 +290,9 @@
 (function () {
   const D = window.ODYSSEY;
   const GREEK_NUMS = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'];
+  const HAS_ENG = D.books.some((b) => b.eng && b.eng.length);
   const HAS_WIL = D.books.some((b) => b.wil && b.wil.length);
-  const COLS = HAS_WIL ? ['grc', 'eng', 'wil', 'rus'] : ['grc', 'eng', 'rus'];
+  const COLS = ['grc'].concat(HAS_ENG ? ['eng'] : [], HAS_WIL ? ['wil'] : [], ['rus']);
   const visible = { grc: true, eng: true, wil: true, rus: true };
   let currentBook = 1;
 
@@ -312,6 +313,7 @@
     bookSel.appendChild(o);
   }
 
+  if (!HAS_ENG) document.querySelector('.coltoggle [data-col="eng"]').remove();
   if (HAS_WIL) {
     const b = document.createElement('button');
     b.dataset.col = 'wil';
@@ -343,19 +345,32 @@
     const R = roman(bn);
     $('bookTitle').textContent = `Ὀδυσσείας ${GREEK_NUMS[bn - 1]}ʹ · Book ${R} · Песнь ${R}`;
     $('bookSub').textContent =
-      `${book.grc.length} στίχοι · ${book.eng.length} passages` +
-      (HAS_WIL ? ` · ${book.wil.length} lines (Wilson)` : '') +
+      `${book.grc.length} στίχοι` +
+      (HAS_ENG ? ` · ${book.eng.length} passages` : '') +
+      (HAS_WIL ? ` · ${book.wil.length} lines` : '') +
       ` · ${book.rus.length} строк`;
     renderFig(bn, 0);
     $('colheads').innerHTML =
       '<div class="cell" data-cell="grc">Ἑλληνικά — Ὅμηρος</div>' +
-      '<div class="cell" data-cell="eng">English — A. T. Murray</div>' +
+      (HAS_ENG ? '<div class="cell" data-cell="eng">English — A. T. Murray</div>' : '') +
       (HAS_WIL ? '<div class="cell" data-cell="wil">English — E. Wilson</div>' : '') +
       '<div class="cell" data-cell="rus">Русский — В. А. Жуковский</div>';
 
-    // rows are driven by the English segments' line ranges
-    const bounds = book.eng.map((s) => s[0]);
-    bounds.push(Infinity);
+    // rows: driven by Murray's segments when present, else fixed 5-line blocks
+    let rows;
+    if (HAS_ENG) {
+      const bounds = book.eng.map((s) => s[0]);
+      bounds.push(Infinity);
+      rows = book.eng.map((s, i) => ({ start: s[0], end: bounds[i + 1], prose: s[1] }));
+    } else {
+      const last = Math.max(...['grc', 'wil', 'rus'].map(
+        (k) => (book[k] && book[k].length) ? book[k][book[k].length - 1][0] : 0));
+      rows = [];
+      for (let start = 1; start <= last; start += 5) {
+        rows.push({ start, end: start + 5 === last + 1 ? Infinity : start + 5 });
+      }
+      if (rows.length) rows[rows.length - 1].end = Infinity;
+    }
 
     const vlines = (arr, i, end, cls) => {
       let h = '';
@@ -367,16 +382,14 @@
     };
     const giRef = [0], wiRef = [0], riRef = [0];
     const parts = [];
-    for (let s = 0; s < book.eng.length; s++) {
-      const [start, text] = book.eng[s];
-      const end = bounds[s + 1];
-      const g = vlines(book.grc, giRef, end, 'grc');
-      const w = HAS_WIL ? vlines(book.wil, wiRef, end, 'wil') : '';
-      const r = vlines(book.rus, riRef, end, 'rus');
+    for (const row of rows) {
+      const g = vlines(book.grc, giRef, row.end, 'grc');
+      const w = HAS_WIL ? vlines(book.wil, wiRef, row.end, 'wil') : '';
+      const r = vlines(book.rus, riRef, row.end, 'rus');
       parts.push(
-        `<div class="row" id="L${start}" data-start="${start}">` +
+        `<div class="row" id="L${row.start}" data-start="${row.start}">` +
         `<div class="cell" data-cell="grc">${g}</div>` +
-        `<div class="cell eng" data-cell="eng"><div class="prose"><span class="n">${start}</span><span class="t">${esc(text)}</span></div></div>` +
+        (HAS_ENG ? `<div class="cell eng" data-cell="eng"><div class="prose"><span class="n">${row.start}</span><span class="t">${esc(row.prose)}</span></div></div>` : '') +
         (HAS_WIL ? `<div class="cell" data-cell="wil">${w}</div>` : '') +
         `<div class="cell" data-cell="rus">${r}</div>` +
         `</div>`
@@ -384,7 +397,8 @@
     }
     $('rows').innerHTML = parts.join('');
     $('credits').textContent =
-      `${D.meta.grc} · ${D.meta.eng}` + (HAS_WIL ? ` · ${D.meta.wil}` : '') + ` · ${D.meta.rus}` +
+      `${D.meta.grc}` + (HAS_ENG ? ` · ${D.meta.eng}` : '') +
+      (HAS_WIL ? ` · ${D.meta.wil}` : '') + ` · ${D.meta.rus}` +
       ` — rows aligned by canonical line numbers; ` +
       (HAS_WIL ? `Wilson's and Zhukovsky's numbering is their own` : `Zhukovsky's numbering is his own`) +
       ` and may drift a few lines within a book.`;
