@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Odyssey — Ὀδύσσεια — Одиссея</title>
+<style>
+  /* ------- stamnos palette -------
+     red-figure (dark): terracotta figures on black glaze
+     black-figure (light): black figures on terracotta ground */
+  :root {
+    --glaze: #0e0906;
+    --glaze-2: #171009;
+    --terra: #d98e52;
+    --terra-bright: #e5a468;
+    --terra-deep: #b0623a;
+    --slip: #e9c9a0;
+
+    --bg: var(--glaze);
+    --panel: var(--glaze-2);
+    --ink: #e0b488;
+    --strong: var(--terra-bright);
+    --muted: #96684a;
+    --accent: var(--terra);
+    --rule: #33200f;
+    --row-hover: #181007;
+    --row-pin: #261708;
+    --band-fg: var(--terra);
+    --band-bg: var(--glaze);
+  }
+  :root[data-theme="light"] {
+    --bg: #c97e4b;
+    --panel: #d18a55;
+    --ink: #221409;
+    --strong: #140c06;
+    --muted: #6e4023;
+    --accent: #2a1a0e;
+    --rule: #a95f31;
+    --row-hover: #c37544;
+    --row-pin: #b96a3c;
+    --band-fg: var(--glaze);
+    --band-bg: #c97e4b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #c97e4b;
+      --panel: #d18a55;
+      --ink: #221409;
+      --strong: #140c06;
+      --muted: #6e4023;
+      --accent: #2a1a0e;
+      --rule: #a95f31;
+      --row-hover: #c37544;
+      --row-pin: #b96a3c;
+      --band-fg: var(--glaze);
+      --band-bg: #c97e4b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  /* tongue band — the shoulder ornament of the stamnos */
+  .tongues {
+    height: 16px;
+    background:
+      radial-gradient(ellipse 45% 90% at 50% 0%, var(--band-fg) 60%, transparent 62%);
+    background-size: 22px 16px;
+    background-repeat: repeat-x;
+    background-color: var(--band-bg);
+    border-bottom: 2px solid var(--band-fg);
+  }
+
+  /* meander (Greek key) band */
+  .meander {
+    height: 22px;
+    background-color: var(--band-bg);
+    background-image: var(--meander-img);
+    background-repeat: repeat-x;
+    background-size: 22px 22px;
+    border-top: 1.5px solid var(--band-fg);
+    border-bottom: 1.5px solid var(--band-fg);
+  }
+  :root {
+    --meander-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M2 20 V2 H20 V14 H8 V8 H14' fill='none' stroke='%23d98e52' stroke-width='2.4'/%3E%3C/svg%3E");
+  }
+  :root[data-theme="light"] {
+    --meander-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M2 20 V2 H20 V14 H8 V8 H14' fill='none' stroke='%2317100a' stroke-width='2.4'/%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --meander-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'%3E%3Cpath d='M2 20 V2 H20 V14 H8 V8 H14' fill='none' stroke='%2317100a' stroke-width='2.4'/%3E%3C/svg%3E");
+    }
+  }
+
+  header.bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+    border-bottom: 1.5px solid var(--rule);
+    padding: 0.55rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  header.bar h1 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.06em;
+    color: var(--strong);
+  }
+  .controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  select, input, button {
+    font: inherit;
+    font-size: 0.88rem;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1.5px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.25rem 0.55rem;
+  }
+  button { cursor: pointer; color: var(--accent); }
+  button:hover { border-color: var(--accent); color: var(--strong); }
+  input#goto { width: 5.5rem; }
+  .coltoggle { display: flex; gap: 0.3rem; margin-left: auto; }
+  .coltoggle button.off { opacity: 0.35; }
+
+  main { max-width: 1500px; margin: 0 auto; padding: 0 1.2rem 3rem; }
+  .bookTitle {
+    text-align: center;
+    margin: 1.5rem 0 0.3rem;
+    font-size: 1.45rem;
+    font-weight: 600;
+    color: var(--strong);
+    letter-spacing: 0.04em;
+  }
+  .bookSub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.84rem;
+    margin-bottom: 1rem;
+  }
+  .bookOrnament {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 1.2rem;
+  }
+  .bookOrnament span {
+    width: 8px; height: 8px;
+    background: var(--accent);
+  }
+  .bookOrnament span:nth-child(even) { background: transparent; border: 1.5px solid var(--accent); }
+
+  /* vase figures — one at a time */
+  #figures {
+    display: flex;
+    justify-content: center;
+    margin: 0 0 1.6rem;
+  }
+  #figures figure {
+    margin: 0;
+    max-width: 460px;
+    width: 100%;
+  }
+  .figpager {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.55rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .figpager button { padding: 0.05rem 0.5rem; }
+  #figures img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 2px solid var(--accent);
+    outline: 1px solid var(--rule);
+    outline-offset: 4px;
+  }
+  #figures img.cutout { border: none; outline: none; }
+  #figures figcaption {
+    margin-top: 0.7rem;
+    text-align: center;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  #figures figcaption .cap-el { color: var(--strong); }
+  #figures figcaption .cap-en, #figures figcaption .cap-ru { color: var(--ink); }
+  #figures .figsrc {
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .colheads, .row {
+    display: grid;
+    grid-template-columns: var(--cols);
+    gap: 1.6rem;
+  }
+  .colheads {
+    position: sticky;
+    top: 3.05rem;
+    background: var(--bg);
+    border-bottom: 2px solid var(--accent);
+    padding: 0.4rem 0;
+    font-size: 0.76rem;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    z-index: 5;
+  }
+  .row {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--rule);
+    scroll-margin-top: 6.2rem;
+  }
+  .row:hover { background: var(--row-hover); }
+  .row.pinned {
+    background: var(--row-pin);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .cell { min-width: 0; }
+  .vline { display: flex; gap: 0.6rem; line-height: 1.5; }
+  .vline .n, .prose .n {
+    flex: 0 0 2.4rem;
+    text-align: right;
+    color: var(--muted);
+    font-size: 0.7rem;
+    padding-top: 0.28rem;
+    user-select: none;
+  }
+  .vline .t { flex: 1; }
+  .grc .t { font-size: 1.02rem; }
+  .eng .t, .prose { line-height: 1.55; font-size: 0.96rem; }
+  .rus .t, .wil .t { font-size: 0.96rem; }
+  .prose { display: flex; gap: 0.6rem; }
+  .hidden { display: none !important; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.76rem;
+    padding: 1.4rem 1rem 2.4rem;
+  }
+</style>
+</head>
+<body>
+<div class="tongues" aria-hidden="true"></div>
+<header class="bar">
+  <h1>Ὀδύσσεια · Odyssey · Одиссея</h1>
+  <div class="controls">
+    <button id="prev" title="Previous book">←</button>
+    <select id="book"></select>
+    <button id="next" title="Next book">→</button>
+    <input id="goto" type="number" min="1" placeholder="line…">
+    <button id="go">Go</button>
+    <button id="theme" title="Red-figure / black-figure">◐</button>
+  </div>
+  <div class="coltoggle">
+    <button data-col="grc" title="Toggle Greek">ΕΛ</button>
+    <button data-col="eng" title="Toggle English">EN</button>
+    <button data-col="rus" title="Toggle Russian">РУ</button>
+  </div>
+</header>
+<main>
+  <div class="bookTitle" id="bookTitle"></div>
+  <div class="bookSub" id="bookSub"></div>
+  <div class="bookOrnament" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div id="figures"></div>
+  <div class="colheads" id="colheads"></div>
+  <div id="rows"></div>
+</main>
+<div class="meander" aria-hidden="true"></div>
+<footer id="credits"></footer>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  const D = window.ODYSSEY;
+  const GREEK_NUMS = ['α','β','γ','δ','ε','ζ','η','θ','ι','κ','λ','μ','ν','ξ','ο','π','ρ','σ','τ','υ','φ','χ','ψ','ω'];
+  const HAS_WIL = D.books.some((b) => b.wil && b.wil.length);
+  const COLS = HAS_WIL ? ['grc', 'eng', 'wil', 'rus'] : ['grc', 'eng', 'rus'];
+  const visible = { grc: true, eng: true, wil: true, rus: true };
+  let currentBook = 1;
+
+  function roman(n) {
+    const R = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+    let out = '';
+    for (const [v, s] of R) while (n >= v) { out += s; n -= v; }
+    return out;
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const bookSel = $('book');
+
+  for (let i = 1; i <= 24; i++) {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = `${GREEK_NUMS[i - 1]}ʹ · ${roman(i)}`;
+    bookSel.appendChild(o);
+  }
+
+  if (HAS_WIL) {
+    const b = document.createElement('button');
+    b.dataset.col = 'wil';
+    b.title = 'Toggle English (Wilson)';
+    b.textContent = 'EN·W';
+    const toggles = document.querySelector('.coltoggle');
+    toggles.insertBefore(b, toggles.querySelector('[data-col="rus"]'));
+  }
+
+  function updateCols() {
+    const on = COLS.filter((c) => visible[c]);
+    document.documentElement.style.setProperty('--cols', on.map(() => '1fr').join(' '));
+    document.querySelectorAll('[data-cell]').forEach((el) => {
+      el.classList.toggle('hidden', !visible[el.dataset.cell]);
+    });
+    document.querySelectorAll('.coltoggle button').forEach((b) => {
+      b.classList.toggle('off', !visible[b.dataset.col]);
+    });
+  }
+
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  }
+
+  function render(bn) {
+    currentBook = bn;
+    bookSel.value = bn;
+    const book = D.books[bn - 1];
+    const R = roman(bn);
+    $('bookTitle').textContent = `Ὀδυσσείας ${GREEK_NUMS[bn - 1]}ʹ · Book ${R} · Песнь ${R}`;
+    $('bookSub').textContent =
+      `${book.grc.length} στίχοι · ${book.eng.length} passages` +
+      (HAS_WIL ? ` · ${book.wil.length} lines (Wilson)` : '') +
+      ` · ${book.rus.length} строк`;
+    renderFig(bn, 0);
+    $('colheads').innerHTML =
+      '<div class="cell" data-cell="grc">Ἑλληνικά — Ὅμηρος</div>' +
+      '<div class="cell" data-cell="eng">English — A. T. Murray</div>' +
+      (HAS_WIL ? '<div class="cell" data-cell="wil">English — E. Wilson</div>' : '') +
+      '<div class="cell" data-cell="rus">Русский — В. А. Жуковский</div>';
+
+    // rows are driven by the English segments' line ranges
+    const bounds = book.eng.map((s) => s[0]);
+    bounds.push(Infinity);
+
+    const vlines = (arr, i, end, cls) => {
+      let h = '';
+      while (i[0] < arr.length && arr[i[0]][0] < end) {
+        const [n, t] = arr[i[0]++];
+        h += `<div class="vline ${cls}"><span class="n">${n % 5 === 0 || n === 1 ? n : ''}</span><span class="t">${esc(t)}</span></div>`;
+      }
+      return h;
+    };
+    const giRef = [0], wiRef = [0], riRef = [0];
+    const parts = [];
+    for (let s = 0; s < book.eng.length; s++) {
+      const [start, text] = book.eng[s];
+      const end = bounds[s + 1];
+      const g = vlines(book.grc, giRef, end, 'grc');
+      const w = HAS_WIL ? vlines(book.wil, wiRef, end, 'wil') : '';
+      const r = vlines(book.rus, riRef, end, 'rus');
+      parts.push(
+        `<div class="row" id="L${start}" data-start="${start}">` +
+        `<div class="cell" data-cell="grc">${g}</div>` +
+        `<div class="cell eng" data-cell="eng"><div class="prose"><span class="n">${start}</span><span class="t">${esc(text)}</span></div></div>` +
+        (HAS_WIL ? `<div class="cell" data-cell="wil">${w}</div>` : '') +
+        `<div class="cell" data-cell="rus">${r}</div>` +
+        `</div>`
+      );
+    }
+    $('rows').innerHTML = parts.join('');
+    $('credits').textContent =
+      `${D.meta.grc} · ${D.meta.eng}` + (HAS_WIL ? ` · ${D.meta.wil}` : '') + ` · ${D.meta.rus}` +
+      ` — rows aligned by canonical line numbers; ` +
+      (HAS_WIL ? `Wilson's and Zhukovsky's numbering is their own` : `Zhukovsky's numbering is his own`) +
+      ` and may drift a few lines within a book.`;
+    updateCols();
+    history.replaceState(null, '', `#${bn}`);
+  }
+
+  function renderFig(bn, idx) {
+    const figs = (D.figures && D.figures[String(bn)]) || [];
+    if (!figs.length) { $('figures').innerHTML = ''; return; }
+    const i = (idx + figs.length) % figs.length;
+    const f = figs[i];
+    const pager = figs.length > 1
+      ? `<div class="figpager"><button data-fig="${i - 1}" title="Previous image">‹</button>` +
+        `<span>${i + 1} / ${figs.length}</span>` +
+        `<button data-fig="${i + 1}" title="Next image">›</button></div>`
+      : '';
+    $('figures').innerHTML =
+      `<figure><img src="${f.img}" alt="${esc(f.en)}" loading="lazy"` +
+      `${f.img.startsWith('data:image/webp') ? ' class="cutout"' : ''}>` +
+      `<figcaption><span class="cap-el">${esc(f.el)}</span> · ` +
+      `<span class="cap-en">${esc(f.en)}</span> · ` +
+      `<span class="cap-ru">${esc(f.ru)}</span>` +
+      `<div class="figsrc">${esc(f.src)}</div></figcaption>${pager}</figure>`;
+    $('figures').querySelectorAll('[data-fig]').forEach((b) => {
+      b.addEventListener('click', () => renderFig(currentBook, +b.dataset.fig));
+    });
+  }
+
+  function gotoLine(n) {
+    const rows = document.querySelectorAll('#rows .row');
+    let target = rows[0];
+    for (const r of rows) {
+      if (+r.dataset.start <= n) target = r; else break;
+    }
+    if (target) {
+      document.querySelectorAll('.row.pinned').forEach((r) => r.classList.remove('pinned'));
+      target.classList.add('pinned');
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', `#${currentBook}.${n}`);
+    }
+  }
+
+  bookSel.addEventListener('change', () => { render(+bookSel.value); window.scrollTo(0, 0); });
+  $('prev').addEventListener('click', () => { if (currentBook > 1) { render(currentBook - 1); window.scrollTo(0, 0); } });
+  $('next').addEventListener('click', () => { if (currentBook < 24) { render(currentBook + 1); window.scrollTo(0, 0); } });
+  $('go').addEventListener('click', () => { const n = +$('goto').value; if (n) gotoLine(n); });
+  $('goto').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const n = +$('goto').value; if (n) gotoLine(n); } });
+  $('theme').addEventListener('click', () => {
+    const root = document.documentElement;
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const cur = root.dataset.theme || (dark ? 'dark' : 'light');
+    root.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+  });
+  document.querySelectorAll('.coltoggle button').forEach((b) => {
+    b.addEventListener('click', () => {
+      const c = b.dataset.col;
+      const onCount = COLS.filter((k) => visible[k]).length;
+      if (visible[c] && onCount === 1) return; // keep at least one column
+      visible[c] = !visible[c];
+      updateCols();
+    });
+  });
+  $('rows').addEventListener('click', (e) => {
+    const row = e.target.closest('.row');
+    if (!row) return;
+    const pinned = row.classList.contains('pinned');
+    document.querySelectorAll('.row.pinned').forEach((r) => r.classList.remove('pinned'));
+    if (!pinned) {
+      row.classList.add('pinned');
+      history.replaceState(null, '', `#${currentBook}.${row.dataset.start}`);
+    }
+  });
+
+  // deep link: #book or #book.line
+  const m = location.hash.match(/^#(\d+)(?:\.(\d+))?/);
+  const startBook = m ? Math.min(24, Math.max(1, +m[1])) : 1;
+  render(startBook);
+  if (m && m[2]) requestAnimationFrame(() => gotoLine(+m[2]));
+})();
+</script>
+</body>
+</html>
