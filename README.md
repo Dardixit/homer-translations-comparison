@@ -16,6 +16,10 @@ in three synchronized columns. Styled after Attic red-figure stamnos vases
   preference with a manual toggle
 - Vase paintings of each book's episode with trilingual captions and museum
   attribution
+- Diacritic-insensitive word search across all 24 books in all three languages
+- Hover dictionary for the Greek text: inflected forms resolved to their
+  dictionary form with an expandable Ancient Greek → English article
+  (via the Wiktionary REST API; requires an internet connection)
 
 ## Texts
 

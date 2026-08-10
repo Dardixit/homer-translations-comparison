@@ -246,6 +246,82 @@
   .rus .t, .wil .t { font-size: 0.96rem; }
   .prose { display: flex; gap: 0.6rem; }
   .hidden { display: none !important; }
+
+  /* search */
+  input#q { width: 11rem; }
+  #spanel {
+    position: fixed;
+    top: 3.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(760px, 94vw);
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    z-index: 20;
+    padding: 0.4rem 0.8rem 0.8rem;
+  }
+  .spanel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+    padding: 0.3rem 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .sbook {
+    margin: 0.7rem 0 0.2rem;
+    color: var(--strong);
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--rule);
+  }
+  .sres {
+    padding: 0.25rem 0.2rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    cursor: pointer;
+  }
+  .sres:hover { background: var(--row-hover); }
+  .sres .stag {
+    color: var(--muted);
+    font-size: 0.7rem;
+    margin-right: 0.45rem;
+    white-space: nowrap;
+  }
+  mark {
+    background: var(--accent);
+    color: var(--bg);
+    padding: 0 0.1em;
+  }
+
+  /* greek hover dictionary */
+  .gw:hover { background: var(--row-pin); box-shadow: 0 1.5px 0 var(--accent); cursor: help; }
+  #dictbubble {
+    position: absolute;
+    z-index: 30;
+    width: min(340px, 88vw);
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+  #dictbubble .dhead { color: var(--strong); font-size: 1.05rem; }
+  #dictbubble .dpos { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.3rem; }
+  #dictbubble ol { margin: 0.2rem 0 0.2rem 1.1rem; padding: 0; }
+  #dictbubble li { margin-bottom: 0.15rem; }
+  #dictbubble .dform { color: var(--muted); font-style: italic; }
+  #dictbubble details { margin-top: 0.3rem; }
+  #dictbubble summary { cursor: pointer; color: var(--accent); font-size: 0.78rem; }
+  #dictbubble .dlinks { margin-top: 0.4rem; font-size: 0.75rem; }
+  #dictbubble .dlinks a { color: var(--accent); margin-right: 0.8rem; }
   footer {
     text-align: center;
     color: var(--muted);
@@ -264,6 +340,8 @@
     <button id="next" title="Next book">→</button>
     <input id="goto" type="number" min="1" placeholder="line…">
     <button id="go">Go</button>
+    <input id="q" type="search" placeholder="ζήτησις · search · поиск">
+    <button id="qgo" title="Search all books">Search</button>
     <button id="theme" title="Red-figure / black-figure">◐</button>
   </div>
   <div class="coltoggle">
@@ -272,6 +350,14 @@
     <button data-col="rus" title="Toggle Russian">РУ</button>
   </div>
 </header>
+<div id="spanel" hidden>
+  <div class="spanel-head">
+    <span id="scount"></span>
+    <button id="sclose" title="Close">×</button>
+  </div>
+  <div id="sresults"></div>
+</div>
+<div id="dictbubble" hidden></div>
 <main>
   <div class="bookTitle" id="bookTitle"></div>
   <div class="bookSub" id="bookSub"></div>
@@ -372,11 +458,14 @@
       if (rows.length) rows[rows.length - 1].end = Infinity;
     }
 
+    const wrapGreek = (s) =>
+      s.replace(/[Ͱ-ΆΈ-Ͽἀ-῿]+[ʼ’]?/g, (w) => `<span class="gw">${w}</span>`);
     const vlines = (arr, i, end, cls) => {
       let h = '';
       while (i[0] < arr.length && arr[i[0]][0] < end) {
         const [n, t] = arr[i[0]++];
-        h += `<div class="vline ${cls}"><span class="n">${n % 5 === 0 || n === 1 ? n : ''}</span><span class="t">${esc(t)}</span></div>`;
+        const body = cls === 'grc' ? wrapGreek(esc(t)) : esc(t);
+        h += `<div class="vline ${cls}"><span class="n">${n % 5 === 0 || n === 1 ? n : ''}</span><span class="t">${body}</span></div>`;
       }
       return h;
     };
@@ -470,6 +559,227 @@
     if (!pinned) {
       row.classList.add('pinned');
       history.replaceState(null, '', `#${currentBook}.${row.dataset.start}`);
+    }
+  });
+
+  // ---------- search across all books ----------
+  const norm = (s) => s.toLowerCase().normalize('NFD')
+    .replace(/[̀-ͯ]/g, '').replace(/[ʼ’']/g, '').replace(/ς/g, 'σ').replace(/ё/g, 'е');
+  const SEARCH_SETS = [
+    ['grc', 'ΕΛ'],
+    HAS_ENG ? ['eng', 'EN'] : null,
+    HAS_WIL ? ['wil', 'EN·W'] : null,
+    ['rus', 'РУ'],
+  ].filter(Boolean);
+  let INDEX = null;
+  function ensureIndex() {
+    if (INDEX) return;
+    INDEX = D.books.map((b) => {
+      const o = {};
+      for (const [k] of SEARCH_SETS) {
+        if (b[k]) o[k] = b[k].map(([n, t]) => [n, norm(t), t]);
+      }
+      return o;
+    });
+  }
+  function markSnippet(orig, nq) {
+    const nfd = orig.normalize('NFD');
+    const pat = [...nq].map((c) =>
+      (c === 'σ' ? '[σςΣ]' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) + '[\\u0300-\\u036fʼ’]*'
+    ).join('');
+    let m2;
+    try { m2 = new RegExp(pat, 'iu').exec(nfd); } catch (e) { m2 = null; }
+    if (!m2) return esc(orig);
+    const a = nfd.slice(0, m2.index).normalize('NFC');
+    const b = nfd.slice(m2.index, m2.index + m2[0].length).normalize('NFC');
+    const c = nfd.slice(m2.index + m2[0].length).normalize('NFC');
+    return `${esc(a)}<mark>${esc(b)}</mark>${esc(c)}`;
+  }
+  function runSearch() {
+    const q = $('q').value.trim();
+    if (!q) return;
+    const nq = norm(q);
+    ensureIndex();
+    const MAX = 400;
+    let total = 0;
+    const parts = [];
+    for (let bi = 0; bi < 24 && total < MAX; bi++) {
+      const hits = [];
+      for (const [k, label] of SEARCH_SETS) {
+        const lines = INDEX[bi][k];
+        if (!lines) continue;
+        for (const [n, nt, orig] of lines) {
+          if (nt.includes(nq)) hits.push({ k, label, n, orig });
+        }
+      }
+      if (!hits.length) continue;
+      hits.sort((x, y) => x.n - y.n);
+      parts.push(`<div class="sbook">Ὀδυσσείας ${GREEK_NUMS[bi]}ʹ · Book ${roman(bi + 1)}</div>`);
+      for (const h of hits) {
+        if (total >= MAX) break;
+        total++;
+        parts.push(
+          `<div class="sres" data-b="${bi + 1}" data-n="${h.n}">` +
+          `<span class="stag">${h.label} ${h.n}</span>${markSnippet(h.orig, nq)}</div>`
+        );
+      }
+    }
+    $('scount').textContent = total
+      ? `${total}${total >= MAX ? '+' : ''} matches for “${q}” (diacritics ignored)`
+      : `Nothing found for “${q}”`;
+    $('sresults').innerHTML = parts.join('');
+    $('spanel').hidden = false;
+  }
+  $('qgo').addEventListener('click', runSearch);
+  $('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+  $('sclose').addEventListener('click', () => { $('spanel').hidden = true; });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('spanel').hidden = true; hideBubble(); } });
+  $('sresults').addEventListener('click', (e) => {
+    const r = e.target.closest('.sres');
+    if (!r) return;
+    $('spanel').hidden = true;
+    render(+r.dataset.b);
+    gotoLine(+r.dataset.n);
+  });
+
+  // ---------- greek hover dictionary (Wiktionary) ----------
+  const bubble = $('dictbubble');
+  const dictCache = new Map();
+  const ELISION = {
+    'δ': 'δέ', 'τ': 'τε', 'θ': 'τε', 'μ': 'με', 'σ': 'σε', 'γ': 'γε', 'κ': 'κε',
+    'ῥ': 'ῥα', 'ἀλλ': 'ἀλλά', 'οὐδ': 'οὐδέ', 'μηδ': 'μηδέ', 'ἠδ': 'ἠδέ', 'ἰδ': 'ἰδέ',
+    'κατ': 'κατά', 'καθ': 'κατά', 'ἐπ': 'ἐπί', 'ἐφ': 'ἐπί', 'ἀπ': 'ἀπό', 'ἀφ': 'ἀπό',
+    'ὑπ': 'ὑπό', 'ὑφ': 'ὑπό', 'παρ': 'παρά', 'ἀν': 'ἀνά', 'δι': 'διά', 'ἀντ': 'ἀντί',
+    'ἀνθ': 'ἀντί', 'μετ': 'μετά', 'μεθ': 'μετά', 'ἄρ': 'ἄρα', 'ὅτ': 'ὅτε', 'ποτ': 'ποτέ',
+    'πάντ': 'πᾶς', 'ἔνθ': 'ἔνθα', 'ὥστ': 'ὥστε', 'εἴτ': 'εἴτε', 'οὔτ': 'οὔτε', 'μήτ': 'μήτε',
+  };
+  const stripTags = (h) => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent || ''; };
+  const firstLink = (h) => {
+    let m2 = /form-of-definition-link.*?<a[^>]*>([^<]+)<\/a>/s.exec(h);
+    if (m2) return m2[1];
+    // otherwise: first link that is a real entry, not an Appendix/glossary page
+    const re = /<a[^>]*title="([^"]*)"[^>]*>([^<]+)<\/a>/g;
+    while ((m2 = re.exec(h))) {
+      if (!m2[1].includes(':')) return m2[2];
+    }
+    return null;
+  };
+  async function wiktEntries(word) {
+    const key = 'w2:' + word;
+    if (dictCache.has(key)) return dictCache.get(key);
+    let stored = null;
+    try { stored = localStorage.getItem(key); } catch (e) {}
+    if (stored) { const v = JSON.parse(stored); dictCache.set(key, v); return v; }
+    const r = await fetch('https://en.wiktionary.org/api/rest_v1/page/definition/' +
+      encodeURIComponent(word) + '?redirect=true');
+    let entries = [];
+    if (r.ok) {
+      const j = await r.json();
+      entries = Object.values(j).flat().filter((e) => /ancient greek/i.test(e.language || ''));
+      entries = entries.map((e) => ({
+        pos: e.partOfSpeech,
+        defs: (e.definitions || []).map((d) => ({
+          text: stripTags(d.definition || '').replace(/\s+/g, ' ').trim(),
+          link: firstLink(d.definition || ''),
+        })).filter((d) => d.text),
+      }));
+    }
+    dictCache.set(key, entries);
+    try { localStorage.setItem(key, JSON.stringify(entries)); } catch (e) {}
+    return entries;
+  }
+  function candidates(raw) {
+    const w = raw.replace(/[ʼ’]$/, '');
+    const elided = /[ʼ’]$/.test(raw);
+    const list = [];
+    if (!elided) { list.push(raw, raw.toLowerCase()); }
+    else {
+      const base = w.toLowerCase();
+      if (ELISION[w]) list.push(ELISION[w]);
+      if (ELISION[base] && ELISION[base] !== ELISION[w]) list.push(ELISION[base]);
+      list.push(raw, w, base);
+    }
+    return [...new Set(list)];
+  }
+  const FORM_RE = /(inflection of|form of|(nominative|genitive|dative|accusative|vocative)\b.*\bof|plural of|singular of|dual of|contraction of|alternative|epic|poetic|apocopic|elision of)/i;
+  async function lookup(raw) {
+    for (const cand of candidates(raw)) {
+      let entries;
+      try { entries = await wiktEntries(cand); } catch (e) { throw new Error('net'); }
+      if (!entries.length) continue;
+      const firstDef = entries[0].defs[0];
+      if (firstDef && FORM_RE.test(firstDef.text) && firstDef.link) {
+        try {
+          const lemEntries = await wiktEntries(firstDef.link);
+          if (lemEntries.length) {
+            return { head: firstDef.link, note: `${cand} — ${firstDef.text}`, entries: lemEntries };
+          }
+        } catch (e) {}
+      }
+      return { head: cand, note: null, entries };
+    }
+    return null;
+  }
+  function renderBubble(word, res) {
+    if (!res) {
+      bubble.innerHTML = `<div class="dhead">${esc(word)}</div>` +
+        `<div class="dform">Not found in Wiktionary.</div>` +
+        `<div class="dlinks"><a href="https://logeion.uchicago.edu/${encodeURIComponent(word.replace(/[ʼ’]$/, ''))}" target="_blank" rel="noopener">Logeion ↗</a></div>`;
+      return;
+    }
+    const shown = res.entries.slice(0, 2);
+    let h = `<div class="dhead">${esc(res.head)}</div>`;
+    if (res.note) h += `<div class="dform">${esc(res.note)}</div>`;
+    for (const e of shown) {
+      h += `<div class="dpos">${esc(e.pos || '')}</div><ol>`;
+      for (const d of e.defs.slice(0, 2)) h += `<li>${esc(d.text)}</li>`;
+      h += '</ol>';
+      if (e.defs.length > 2) {
+        h += `<details><summary>all ${e.defs.length} senses</summary><ol start="3">`;
+        for (const d of e.defs.slice(2)) h += `<li>${esc(d.text)}</li>`;
+        h += '</ol></details>';
+      }
+    }
+    h += `<div class="dlinks">` +
+      `<a href="https://en.wiktionary.org/wiki/${encodeURIComponent(res.head)}#Ancient_Greek" target="_blank" rel="noopener">Wiktionary ↗</a>` +
+      `<a href="https://logeion.uchicago.edu/${encodeURIComponent(res.head)}" target="_blank" rel="noopener">Logeion ↗</a></div>`;
+    bubble.innerHTML = h;
+  }
+  let hoverTimer = 0, hideTimer = 0, bubbleFor = null;
+  function placeBubble(el) {
+    const r = el.getBoundingClientRect();
+    bubble.hidden = false;
+    const left = Math.min(r.left + scrollX, scrollX + innerWidth - bubble.offsetWidth - 12);
+    bubble.style.left = Math.max(scrollX + 6, left) + 'px';
+    bubble.style.top = (r.bottom + scrollY + 6) + 'px';
+  }
+  function hideBubble() { bubble.hidden = true; bubbleFor = null; }
+  async function showBubble(el) {
+    const word = el.textContent;
+    bubbleFor = el;
+    bubble.innerHTML = `<div class="dhead">${esc(word)}</div><div class="dform">Looking up…</div>`;
+    placeBubble(el);
+    try {
+      const res = await lookup(word);
+      if (bubbleFor !== el) return;
+      renderBubble(word, res);
+    } catch (e) {
+      if (bubbleFor !== el) return;
+      bubble.innerHTML = `<div class="dhead">${esc(word)}</div>` +
+        `<div class="dform">Dictionary needs an internet connection (and does not work inside the Claude artifact preview).</div>`;
+    }
+    placeBubble(el);
+  }
+  document.addEventListener('mouseover', (e) => {
+    const gw = e.target.closest('.gw');
+    if (gw) {
+      clearTimeout(hoverTimer); clearTimeout(hideTimer);
+      hoverTimer = setTimeout(() => showBubble(gw), 250);
+    } else if (e.target.closest('#dictbubble')) {
+      clearTimeout(hideTimer);
+    } else {
+      clearTimeout(hoverTimer);
+      hideTimer = setTimeout(hideBubble, 250);
     }
   });
 
