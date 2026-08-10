@@ -29,31 +29,31 @@
     --band-bg: var(--glaze);
   }
   :root[data-theme="light"] {
-    --bg: #c97e4b;
-    --panel: #d18a55;
-    --ink: #221409;
+    --bg: #ddb083;
+    --panel: #e9cba4;
+    --ink: #22150a;
     --strong: #140c06;
-    --muted: #6e4023;
+    --muted: #6f4526;
     --accent: #2a1a0e;
-    --rule: #a95f31;
-    --row-hover: #c37544;
-    --row-pin: #b96a3c;
+    --rule: #bb8e5f;
+    --row-hover: #d6a877;
+    --row-pin: #cf9d68;
     --band-fg: var(--glaze);
-    --band-bg: #c97e4b;
+    --band-bg: #ddb083;
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme="dark"]) {
-      --bg: #c97e4b;
-      --panel: #d18a55;
-      --ink: #221409;
+      --bg: #ddb083;
+      --panel: #e9cba4;
+      --ink: #22150a;
       --strong: #140c06;
-      --muted: #6e4023;
+      --muted: #6f4526;
       --accent: #2a1a0e;
-      --rule: #a95f31;
-      --row-hover: #c37544;
-      --row-pin: #b96a3c;
+      --rule: #bb8e5f;
+      --row-hover: #d6a877;
+      --row-pin: #cf9d68;
       --band-fg: var(--glaze);
-      --band-bg: #c97e4b;
+      --band-bg: #ddb083;
     }
   }
   * { box-sizing: border-box; }
@@ -126,6 +126,7 @@
     border-radius: 3px;
     padding: 0.25rem 0.55rem;
   }
+  input::placeholder { color: var(--muted); opacity: 1; }
   button { cursor: pointer; color: var(--accent); }
   button:hover { border-color: var(--accent); color: var(--strong); }
   input#goto { width: 5.5rem; }
@@ -723,8 +724,7 @@
   function renderBubble(word, res) {
     if (!res) {
       bubble.innerHTML = `<div class="dhead">${esc(word)}</div>` +
-        `<div class="dform">Not found in Wiktionary.</div>` +
-        `<div class="dlinks"><a href="https://logeion.uchicago.edu/${encodeURIComponent(word.replace(/[ʼ’]$/, ''))}" target="_blank" rel="noopener">Logeion ↗</a></div>`;
+        `<div class="dlinks"><a href="https://logeion.uchicago.edu/${encodeURIComponent(word.replace(/[ʼ’]$/, ''))}" target="_blank" rel="noopener">Look up on Logeion ↗</a></div>`;
       return;
     }
     const shown = res.entries.slice(0, 2);
@@ -741,8 +741,8 @@
       }
     }
     h += `<div class="dlinks">` +
-      `<a href="https://en.wiktionary.org/wiki/${encodeURIComponent(res.head)}#Ancient_Greek" target="_blank" rel="noopener">Wiktionary ↗</a>` +
-      `<a href="https://logeion.uchicago.edu/${encodeURIComponent(res.head)}" target="_blank" rel="noopener">Logeion ↗</a></div>`;
+      `<a href="https://logeion.uchicago.edu/${encodeURIComponent(res.head)}" target="_blank" rel="noopener">Logeion ↗</a>` +
+      `<a href="https://en.wiktionary.org/wiki/${encodeURIComponent(res.head)}#Ancient_Greek" target="_blank" rel="noopener">Wiktionary ↗</a></div>`;
     bubble.innerHTML = h;
   }
   let hoverTimer = 0, hideTimer = 0, bubbleFor = null;
