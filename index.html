@@ -352,6 +352,13 @@
     if (langsOn.has('fi')) subParts.push(W.titles.fi);
     if (langsOn.has('ru')) subParts.push(W.titles.ru);
     $('bookSub').textContent = `${subParts.join(' · ')} — ${grc.length} στίχοι`;
+    const qParts = ['ζήτησις'];
+    if (langsOn.has('en')) qParts.push('search');
+    if (langsOn.has('fi')) qParts.push('haku');
+    if (langsOn.has('ru')) qParts.push('поиск');
+    $('q').placeholder = qParts.join(' · ');
+    $('qgo').textContent = langsOn.has('en') ? 'Search'
+      : langsOn.has('fi') ? 'Hae' : langsOn.has('ru') ? 'Поиск' : 'Ζήτει';
     $('colheads').innerHTML = cols.map((c) =>
       `<div class="cell">${esc(c.label)}</div>`).join('');
 
