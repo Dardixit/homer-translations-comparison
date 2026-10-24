@@ -337,9 +337,21 @@
     const cols = W.columns.filter((c) => visible[currentWork][c.key] && book.cols[c.key]);
     document.documentElement.style.setProperty('--cols', cols.map(() => '1fr').join(' '));
     const R = roman(bn);
-    $('bookTitle').textContent = `${WORK_GEN[currentWork]} ${GREEK_NUMS[bn - 1]}ʹ · Book ${R} · Песнь ${R}`;
+    const langsOn = new Set();
+    for (const c of W.columns) {
+      if (visible[currentWork][c.key] && COL_LANG[c.key]) langsOn.add(COL_LANG[c.key]);
+    }
+    const titleParts = [`${WORK_GEN[currentWork]} ${GREEK_NUMS[bn - 1]}ʹ`];
+    if (langsOn.has('en')) titleParts.push(`Book ${R}`);
+    if (langsOn.has('fi')) titleParts.push(`Laulu ${R}`);
+    if (langsOn.has('ru')) titleParts.push(`Песнь ${R}`);
+    $('bookTitle').textContent = titleParts.join(' · ');
     const grc = book.cols.grc || [];
-    $('bookSub').textContent = `${W.titles.el} · ${W.titles.en} · ${W.titles.fi} · ${W.titles.ru} — ${grc.length} στίχοι`;
+    const subParts = [W.titles.el];
+    if (langsOn.has('en')) subParts.push(W.titles.en);
+    if (langsOn.has('fi')) subParts.push(W.titles.fi);
+    if (langsOn.has('ru')) subParts.push(W.titles.ru);
+    $('bookSub').textContent = `${subParts.join(' · ')} — ${grc.length} στίχοι`;
     $('colheads').innerHTML = cols.map((c) =>
       `<div class="cell">${esc(c.label)}</div>`).join('');
 
