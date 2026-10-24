@@ -14,7 +14,9 @@ pottery (the "Siren Vase", British Museum E440).
 - Diacritic-insensitive word search across the whole poem in every language
 - Hover dictionary for the Greek text: inflected forms resolved to their
   dictionary form with an expandable Ancient Greek → English article
-  (Wiktionary REST API; requires an internet connection)
+  (Wiktionary REST API; requires an internet connection), with onward links
+  to [Logeion](https://logeion.uchicago.edu/) (LSJ and the other classical
+  lexica) for every word
 - Vase paintings and classical artworks for key episodes, with trilingual
   captions and full museum/photo attribution
 - Red-figure (dark) and black-figure (light) themes; deep links like `#il.16.676`
