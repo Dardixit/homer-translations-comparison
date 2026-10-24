@@ -473,7 +473,7 @@
     $('about').innerHTML =
       `<button class="close" id="aboutClose">×</button>` +
       `<h2>Homer Translations Comparison</h2>` +
-      `<p>Parallel reading of the <i>Iliad</i> and the <i>Odyssey</i>: the ancient Greek text beside public-domain translations, aligned by canonical line numbers in five-line blocks. Hover a Greek word for its dictionary form (Wiktionary; needs internet). Toggle versions with the buttons at the top right.</p>` +
+      `<p>Parallel reading of the <i>Iliad</i> and the <i>Odyssey</i>: the ancient Greek text beside public-domain translations, aligned by canonical line numbers in five-line blocks. Hover a Greek word for its dictionary form and senses (via Wiktionary; needs internet) — every bubble links onward to <a href="https://logeion.uchicago.edu/" target="_blank" rel="noopener">Logeion</a> (LSJ and the other classical lexica) and to the full Wiktionary entry. Toggle versions with the buttons at the top right.</p>` +
       `<h3>Editions in this copy — ${esc(W.titles.en)}</h3><ul>${colList}</ul>` +
       `<h3>Not included — still under copyright</h3>` +
       `<ul>${EXCLUDED.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` +
